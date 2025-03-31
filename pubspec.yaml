@@ -1,0 +1,27 @@
+name: just_audio_aurora
+description: "A new Flutter plugin project."
+version: 0.0.1
+homepage:
+
+environment:
+  sdk: ^3.6.0
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  just_audio_platform_interface: ^4.4.0
+  plugin_platform_interface: ^2.0.2
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  plugin:
+    implements: just_audio
+    platforms:
+      aurora:
+        pluginClass: JustAudioAurora

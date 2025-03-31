@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/aurora/include/just_audio_aurora",
+                "/usr/include/**",
+                "/usr/local/include/**",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-armv7hl/usr/include/flutter-embedder",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/glib-2.0",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/lib/glib-2.0/include",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/qt5",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/qt5/QtCore",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/qt5/QtDBus",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/qt5/QtGui",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/qt5/QtQml",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/qt5/QtQuick",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-x86_64/usr/include/qt5/QtMultimedia",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-armv7hl/usr/include/flutter-embedder/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
