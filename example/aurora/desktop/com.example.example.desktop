@@ -7,6 +7,6 @@ Exec=/usr/bin/com.example.example
 X-Nemo-Application-Type=silica-qt5
 
 [X-Application]
-Permissions=
+Permissions=Audio;Music;UserDirs;
 OrganizationName=com.example
-ApplicationName=example
+ApplicationName=just_audio_example

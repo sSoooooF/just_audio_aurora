@@ -29,7 +29,7 @@ class AudioPlayerScreen extends StatefulWidget {
 }
 
 class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
-  late final AudioPlayerPlatform _audioPlayer;
+  late final AuroraAudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 1.0;
 
@@ -37,12 +37,17 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   void initState() {
     super.initState();
     _audioPlayer = AuroraAudioPlayer("example_player");
+    setSource();
   }
 
   @override
   void dispose() {
     _audioPlayer.dispose(DisposeRequest());
     super.dispose();
+  }
+
+  Future<void> setSource() async {
+    _audioPlayer.setUrl("assets/Bones.mp3");
   }
 
   Future<void> _play() async {

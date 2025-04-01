@@ -7,7 +7,17 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
   final MethodChannel _channel;
 
   AuroraAudioPlayer(this.id)
-  : _channel = MethodChannel('just_audio_aurora'), super('');
+  : _channel = MethodChannel("just_audio_aurora"), super('');
+
+  Future<void> setUrl(String url) async {
+    try {
+      await _channel.invokeMethod('setUrl', {
+        'url':url
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
 
   @override
   Future<PlayResponse> play(PlayRequest request) async {

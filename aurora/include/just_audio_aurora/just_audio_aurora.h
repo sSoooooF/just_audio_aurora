@@ -24,16 +24,16 @@ typedef flutter::MethodResult<EncodableValue> MethodResult;
 
 typedef flutter::PluginRegistrar PluginRegistrar;
 
-class PLUGIN_EXPORT JustAudioAuroraPlugin final : public flutter::Plugin
+class PLUGIN_EXPORT JustAudioAurora final : public flutter::Plugin
 {
 public:
-    explicit JustAudioAuroraPlugin(PluginRegistrar* registrar);
+    explicit JustAudioAurora(PluginRegistrar* registrar);
 
     static void RegisterWithRegistrar(PluginRegistrar* registrar);
 
 private:
     class Impl;
-    std::unique_ptr<Impl, void (*)(Impl*)> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 #endif /* FLUTTER_PLUGIN_JUST_AUDIO_AURORA_PLUGIN_H */

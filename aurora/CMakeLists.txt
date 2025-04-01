@@ -9,7 +9,6 @@ set(PROJECT_NAME just_audio_aurora)
 set(PLUGIN_NAME  just_audio_aurora_platform_plugin)
 set(PLUGIN_TARGET_NAME just_audio_aurora_platform_plugin_impl)
 
-
 project(${PROJECT_NAME} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -31,7 +30,5 @@ target_link_libraries(${PLUGIN_NAME} PUBLIC Qt5::Core Qt5::Multimedia)
 
 target_include_directories(${PLUGIN_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_include_directories(${PLUGIN_NAME} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/just_audio_aurora)
 
 target_compile_definitions(${PLUGIN_NAME} PRIVATE PLUGIN_IMPL)
