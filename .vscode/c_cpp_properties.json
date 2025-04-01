@@ -18,6 +18,7 @@
                 "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-armv7hl/usr/include/qt5/QtQml",
                 "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-armv7hl/usr/include/qt5/QtQuick",
                 "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-armv7hl/usr/include/qt5/QtMultimedia",
+                "/home/nail/AuroraPlatformSDK-5.1.1.60/targets/AuroraOS-5.1.1.60-base-armv7hl/usr/include/flutter-embedder/flutter"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
