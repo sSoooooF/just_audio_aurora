@@ -1,7 +1,11 @@
 #ifndef FLUTTER_PLUGIN_JUST_AUDIO_AURORA_PLUGIN_H
 #define FLUTTER_PLUGIN_JUST_AUDIO_AURORA_PLUGIN_H
 
-#include <just_audio_aurora/globals.h>
+#include "./globals.h"
+
+#include <QtMultimedia/QMediaPlayer>
+#include <QtCore/QUrl>
+
 
 #include <flutter/plugin_registrar.h>
 #include <flutter/encodable_value.h>
@@ -11,27 +15,31 @@
 #include <string>
 #include <memory>
 
-// Flutter encodable
 typedef flutter::EncodableValue EncodableValue;
 typedef flutter::EncodableMap EncodableMap;
 typedef flutter::EncodableList EncodableList;
-// Flutter methods
+
 typedef flutter::MethodChannel<EncodableValue> MethodChannel;
 typedef flutter::MethodCall<EncodableValue> MethodCall;
 typedef flutter::MethodResult<EncodableValue> MethodResult;
 
-class PLUGIN_EXPORT JustAudioAurora final : public flutter::Plugin
+class JustAudioAurora : public flutter::Plugin
 {
 public:
 
-    JustAudioAurora(FlutterDesktopPluginRegistrarRef registrar, const std::string &id);
-    ~JustAudioAurora();
+    explicit JustAudioAurora(flutter::PluginRegistrar* registrar, const std::string& id);
+    virtual ~JustAudioAurora();
 
-    static void RegisterWithRegistrar(FlutterDesktopPluginRegistrarRef registrar);
+    JustAudioAurora(const JustAudioAurora&) = delete;
+    JustAudioAurora& operator=(const JustAudioAurora&) = delete;
+
+    static void RegisterWithRegistrar(flutter::PluginRegistrar* registrar);
 
 private:
-    struct Impl;
-    std::unique_ptr<Impl> impl;
+    flutter::PluginRegistrar * registrar_;
+    std::string id_;
+    std::unique_ptr<QMediaPlayer> player_;
+    std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
 };
 
 #endif /* FLUTTER_PLUGIN_JUST_AUDIO_AURORA_PLUGIN_H */

@@ -4,7 +4,7 @@
 # PSDK_MAJOR             - Build psdk major version
 
 cmake_minimum_required(VERSION 3.10)
-project(com.example.my_example LANGUAGES CXX)
+project(com.example.example LANGUAGES CXX)
 
 include(GNUInstallDirs)
 

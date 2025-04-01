@@ -78,8 +78,8 @@ packages:
   just_audio_aurora:
     dependency: "direct main"
     description:
-      path: "/home/nail/Documents/repos/just_audio_aurora"
-      relative: false
+      path: ".."
+      relative: true
     source: path
     version: "0.0.1"
   just_audio_platform_interface:

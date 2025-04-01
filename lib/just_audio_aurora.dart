@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
 
 class AuroraAudioPlayer extends AudioPlayerPlatform {
+  @override
   final String id;
   final MethodChannel _channel;
 

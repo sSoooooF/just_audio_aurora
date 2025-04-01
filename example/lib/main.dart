@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio_aurora/just_audio_aurora.dart';
 import 'package:just_audio_aurora/just_audio_aurora_platform.dart';
+import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
 
 void main() {
   registerJustAudioAurora();
@@ -28,27 +29,31 @@ class AudioPlayerScreen extends StatefulWidget {
 }
 
 class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
-  final _audioPlayer = AuroraAudioPlayer("example_player");
+  late final AudioPlayerPlatform _audioPlayer;
   bool _isPlaying = false;
   double _volume = 1.0;
 
   @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AuroraAudioPlayer("example_player");
+  }
+
+  @override
   void dispose() {
-    _audioPlayer.dispose();
+    _audioPlayer.dispose(DisposeRequest());
     super.dispose();
   }
 
-  Future<void> _loadAndPlay() async {
-    await _audioPlayer.load(
-      LoadRequest(
-        audioSource: ProgressiveAudioSourceMessage(
-          id: "test_audio",
-          uri: "assets/Bones.mp3",  // Путь к аудиофайлу
-        ),
-      ),
-    );
-    await _audioPlayer.play(PlayRequest());
-    setState(() => _isPlaying = true);
+  Future<void> _play() async {
+    try {
+      await _audioPlayer.play(PlayRequest());
+      setState(() => _isPlaying = true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ошибка: $e")),
+      );
+    }
   }
 
   Future<void> _pause() async {
@@ -64,7 +69,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Just Audio Aurora')),
+      appBar: AppBar(title: const Text('Just Audio Aurora Example')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -72,7 +77,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
             IconButton(
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               iconSize: 48,
-              onPressed: _isPlaying ? _pause : _loadAndPlay,
+              onPressed: _isPlaying ? _pause : _play,
             ),
             Slider(
               value: _volume,
