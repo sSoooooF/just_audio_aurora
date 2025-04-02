@@ -47,7 +47,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   }
 
   Future<void> setSource() async {
-    _audioPlayer.setUrl("assets/Bones.mp3");
+    _audioPlayer.setUrl("Bones.mp3");
   }
 
   Future<void> _play() async {

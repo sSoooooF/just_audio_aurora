@@ -21,6 +21,7 @@ public:
     const MethodCall& call,
     std::unique_ptr<MethodResult> result
   ) {
+      
       if (call.method_name() == "play")
       {
         player_->play();
@@ -70,6 +71,7 @@ public:
 private:
   flutter::PluginRegistrar * registrar_;
   std::unique_ptr<QMediaPlayer> player_;
+  std::unique_ptr<QAudioOutput> output_;
   std::unique_ptr<MethodChannel> channel_;
 };
 

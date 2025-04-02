@@ -56,7 +56,10 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "qurl": "cpp",
-        "qmediaplayer": "cpp"
+        "qmediaplayer": "cpp",
+        "bitset": "cpp",
+        "mutex": "cpp",
+        "regex": "cpp"
     },
     "cmake.ignoreCMakeListsMissing": true
 }
