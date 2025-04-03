@@ -21,12 +21,16 @@ find_package(PkgConfig REQUIRED)
 find_package(Qt5 COMPONENTS Core Multimedia REQUIRED)
 
 pkg_check_modules(FlutterEmbedder REQUIRED IMPORTED_TARGET flutter-embedder)
+pkg_search_module(GLIB IMPORTED_TARGET REQUIRED glib-2.0)
+pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0)
+pkg_check_modules(GLES REQUIRED IMPORTED_TARGET glesv2)
 
 add_library(${PLUGIN_NAME} SHARED just_audio_aurora.cpp)
 
 set_target_properties(${PLUGIN_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_link_libraries(${PLUGIN_NAME} PRIVATE PkgConfig::FlutterEmbedder)
 target_link_libraries(${PLUGIN_NAME} PUBLIC Qt5::Core Qt5::Multimedia)
+target_link_libraries(${PLUGIN_NAME} PUBLIC PkgConfig::GSTREAMER PkgConfig::GLIB PkgConfig::GLES)
 
 target_include_directories(${PLUGIN_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:just_audio_aurora/just_audio_aurora.dart';
 import 'package:just_audio_aurora/just_audio_aurora_platform.dart';
@@ -32,25 +34,34 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   late final AuroraAudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 1.0;
+  // late final StreamSubscription<PlaybackEventMessage> _playbackEventSub;
 
   @override
   void initState() {
     super.initState();
     _audioPlayer = AuroraAudioPlayer("example_player");
     setSource();
+
+    // _playbackEventSub = _audioPlayer.playbackEventMessageStream.listen(
+    //   (event) {
+    //     print(event);
+    //   }
+    // );
   }
 
   @override
   void dispose() {
+    // _playbackEventSub.cancel();
     _audioPlayer.dispose(DisposeRequest());
     super.dispose();
   }
 
   Future<void> setSource() async {
-    _audioPlayer.setUrl("Bones.mp3");
+    _audioPlayer.setUrl("assets/Bones.mp3");
   }
 
   Future<void> _play() async {
+    _audioPlayer.setVolume(SetVolumeRequest(volume: 1.0));
     try {
       await _audioPlayer.play(PlayRequest());
       setState(() => _isPlaying = true);

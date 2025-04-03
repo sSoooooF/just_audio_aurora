@@ -20,6 +20,12 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
   }
 
   @override
+  Future<LoadResponse> load(LoadRequest request) async {
+    await _channel.invokeMethod('setUrl');
+    return LoadResponse(duration: Duration(seconds: 0));
+  }
+
+  @override
   Future<PlayResponse> play(PlayRequest request) async {
     await _channel.invokeMethod('play');
     return PlayResponse();
@@ -35,7 +41,7 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
   Future<SeekResponse> seek(SeekRequest request) async {
     await _channel.invokeMethod('seek', {
       'position': request.position?.inMilliseconds,
-      'index' : request.index,
+      if (request.index != null)'index' : request.index,
     });
     return SeekResponse();
   }
@@ -63,12 +69,12 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
   }
 
   @override
-  Stream<PlaybackEventMessage> get playbackEventMessageStream {
-    return _eventChannel.receiveBroadcastStream().map((event) {
-      return PlaybackEventMessage.fromMap(event);
-    });
-  }
+  // Stream<PlaybackEventMessage> get playbackEventMessageStream {
+    // return _eventChannel.receiveBroadcastStream().map((event) {
+      // return PlaybackEventMessage.fromMap(event);
+    // });
+  // }
 
-  static const EventChannel _eventChannel =
-      EventChannel('just_audio_aurora_events');
+  // static const EventChannel _eventChannel =
+      // EventChannel('just_audio_aurora_events');
 }

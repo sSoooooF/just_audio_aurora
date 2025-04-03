@@ -5,7 +5,6 @@
 
 #include <QUrl>
 #include <QMediaPlayer>
-#include <QAudioOutput>
 
 #include <flutter/plugin_registrar.h>
 #include <flutter/encodable_value.h>

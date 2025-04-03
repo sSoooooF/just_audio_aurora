@@ -9,7 +9,6 @@ public:
       "just_audio_aurora",
       &flutter::StandardMethodCodec::GetInstance()
     );
-
     channel_->SetMethodCallHandler(
       [this] (const auto& call, auto result) {
         HandleMethodCall(call, std::move(result));
@@ -21,7 +20,6 @@ public:
     const MethodCall& call,
     std::unique_ptr<MethodResult> result
   ) {
-      
       if (call.method_name() == "play")
       {
         player_->play();
@@ -37,33 +35,50 @@ public:
           player_->setPosition(position);
         }
         result->Success(EncodableValue(true));
-      } else if (call.method_name() == "setVolume") {
+      }
+      else if (call.method_name() == "setVolume") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
         if (args) {
           auto it = args->find(EncodableValue("volume"));
           if (it != args->end()) {
-            int volume = std::get<double>(it->second);
-            player_->setVolume(volume);
-            result->Success(EncodableValue(true));
+            if (std::holds_alternative<double>(it->second)) {
+              int volume = static_cast<int>(std::get<double>(it->second) * 100);
+              player_->setVolume(volume);
+              result->Success(EncodableValue(true));
+            } else {
+              result->Error("INVALID_VOLUME", "Volume must be a double");
+            }
           }
         }
-      } else if (call.method_name() == "setUrl") {
+      }
+      else if (call.method_name() == "setUrl") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
         if (args) {
           auto it = args->find(EncodableValue("url"));
-          std::string url = std::get<std::string>(it->second);
-          QUrl qUrl(QString::fromStdString(url));
 
-          if (qUrl.isValid()) {
-            player_->setMedia(qUrl);
-            result->Success(EncodableValue(true));
+          if (it != args->end() && std::holds_alternative<std::string>(it->second)) {
+            std::string url = std::get<std::string>(it->second);
+            QUrl qUrl(QString::fromStdString(url));
+
+            if (qUrl.isValid()) {
+              player_->setMedia(QMediaContent(qUrl));
+              result->Success(EncodableValue(true));
+            }
+            else {
+              result->Error("INVALID_URL", "Url is not valid");
+            }
           }
           else {
-            result->Error("INVALID_URL");
+            result->Error("INVALID_ARGUMENT", "URL must be a string");
           }
           return;
         }
-      } else {
+      } else if (call.method_name() == "dispose") {
+        player_->stop();
+        player_.reset();
+        result->Success(EncodableValue(true));
+      }
+      else {
         result->NotImplemented();
       }
   }
@@ -71,7 +86,6 @@ public:
 private:
   flutter::PluginRegistrar * registrar_;
   std::unique_ptr<QMediaPlayer> player_;
-  std::unique_ptr<QAudioOutput> output_;
   std::unique_ptr<MethodChannel> channel_;
 };
 
