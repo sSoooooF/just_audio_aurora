@@ -39,7 +39,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    _audioPlayer = AuroraAudioPlayer("example_player");
+    _audioPlayer = AuroraAudioPlayer("just_audio_aurora");
     setSource();
 
     // _playbackEventSub = _audioPlayer.playbackEventMessageStream.listen(
@@ -57,9 +57,9 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   }
 
   Future<void> setSource() async {
-    _audioPlayer.setUrl("assets/Bones.mp3");
+    _audioPlayer.setUrl("https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3");
   }
-
+  // https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3
   Future<void> _play() async {
     _audioPlayer.setVolume(SetVolumeRequest(volume: 1.0));
     try {

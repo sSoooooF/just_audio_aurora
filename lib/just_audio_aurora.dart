@@ -68,7 +68,6 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     return DisposeResponse();
   }
 
-  @override
   // Stream<PlaybackEventMessage> get playbackEventMessageStream {
     // return _eventChannel.receiveBroadcastStream().map((event) {
       // return PlaybackEventMessage.fromMap(event);
