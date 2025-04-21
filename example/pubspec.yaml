@@ -13,6 +13,7 @@ dependencies:
   just_audio_aurora:
     path: ../
   cupertino_icons: ^1.0.8
+  just_audio: ^0.9.46
 
 dev_dependencies:
   flutter_test:

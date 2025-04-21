@@ -54,12 +54,34 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     return SetVolumeResponse();
   }
 
+  Future<double> getVolume() async {
+    final double volume = await _channel.invokeMethod('getVolume');
+    return volume;
+  }
+
+  Future<double> getPosition() async {
+    final double position = await _channel.invokeMethod('getPosition');
+    return position;
+  }
+
+
   @override
   Future<SetSpeedResponse> setSpeed(SetSpeedRequest request) async {
-    await _channel.invokeMethod('setSpeed', {
+    await _channel.invokeMethod('setPlaybackRate', {
       'speed': request.speed,
     });
     return SetSpeedResponse();
+  }
+
+  Future<double> getSpeed() async {
+    final double speed = await _channel.invokeMethod('getPlaybackRate');
+    return speed;
+  }
+
+  @override
+  Future<SetLoopModeResponse> setLoopMode(SetLoopModeRequest request) async {
+    await _channel.invokeMethod('setLooping', {'looping': request.loopMode});
+    return SetLoopModeResponse();
   }
 
   @override

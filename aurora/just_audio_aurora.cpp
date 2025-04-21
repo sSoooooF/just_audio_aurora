@@ -2,6 +2,8 @@
 #include <gst/gst.h>
 #include <iostream>
 
+// TODO: разобраться с EventChannel
+
 class JustAudioAurora::Impl {
 public:
   Impl(PluginRegistrar* registrar) : registrar_(registrar) {
@@ -82,6 +84,12 @@ public:
         }
         result->Success(EncodableValue(true));
       }
+      else if (call.method_name() == "getPlaybackRate") {
+        result->Success(EncodableValue(playback_rate_));
+      }
+      else if (call.method_name() == "isLooping") {
+        result->Success(EncodableValue(is_looping_ ? "all" : "none"));
+      }
       else if (call.method_name() == "setLooping") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
         if (args) {
@@ -91,6 +99,12 @@ public:
           }
         }
         result->Success(EncodableValue(true));
+      }
+      else if (call.method_name() == "getVolume") {
+        result->Success(EncodableValue(volume_));
+      }
+      else if (call.method_name() == "getPosition") {
+        result->Success(EncodableValue(GetPosition()));
       }
       else if (call.method_name() == "dispose") {
         Dispose();
@@ -229,12 +243,31 @@ private:
     }
   }
 
+  int64_t GetPosition() {
+    if (!is_initialized_) return -1;
+
+    gint64 position = 0;
+    if(!gst_element_query_position(gst_.playbin, GST_FORMAT_TIME, &position)) {
+      return -1;
+    }
+
+    return position / GST_MSECOND;
+  }
+
+  double GetVolume() {
+    return volume_;
+  }
+
   void SetVolume(double volume) {
     if (volume > 1) volume = 1;
     else if (volume < 0) volume = 0;
     
     volume_ = volume;
     g_object_set(gst_.playbin, "volume", volume, nullptr);
+  }
+
+  double GetPlaybackRate() {
+    return playback_rate_;
   }
 
   void SetPlaybackRate(double playback_rate) {

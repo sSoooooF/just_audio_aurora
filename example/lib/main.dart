@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:just_audio_aurora/just_audio_aurora.dart';
 import 'package:just_audio_aurora/just_audio_aurora_platform.dart';
@@ -34,34 +33,39 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   late final AuroraAudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 1.0;
-  // late final StreamSubscription<PlaybackEventMessage> _playbackEventSub;
+  double _playbackRate = 1.0;
+  String _audioUrl = "";
+  TextEditingController _urlController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _audioPlayer = AuroraAudioPlayer("just_audio_aurora");
     setSource();
-
-    // _playbackEventSub = _audioPlayer.playbackEventMessageStream.listen(
-    //   (event) {
-    //     print(event);
-    //   }
-    // );
   }
 
   @override
   void dispose() {
-    // _playbackEventSub.cancel();
     _audioPlayer.dispose(DisposeRequest());
     super.dispose();
   }
 
   Future<void> setSource() async {
-    _audioPlayer.setUrl("https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3");
+    if (_audioUrl.isNotEmpty) {
+      try {
+        await _audioPlayer.setUrl(_audioUrl);
+        setState(() {});
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Ошибка: $e")),
+        );
+      }
+    }
   }
-  // https://s3.amazonaws.com/scifri-episodes/scifri20181123-episode.mp3
+
   Future<void> _play() async {
-    _audioPlayer.setVolume(SetVolumeRequest(volume: 1.0));
+    await _audioPlayer.setVolume(SetVolumeRequest(volume: _volume));
+    await _audioPlayer.setSpeed(SetSpeedRequest(speed: _playbackRate));
     try {
       await _audioPlayer.play(PlayRequest());
       setState(() => _isPlaying = true);
@@ -77,9 +81,22 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     setState(() => _isPlaying = false);
   }
 
+
   Future<void> _setVolume(double value) async {
     await _audioPlayer.setVolume(SetVolumeRequest(volume: value));
     setState(() => _volume = value);
+  }
+
+  Future<void> _setSpeed(double value) async {
+    await _audioPlayer.setSpeed(SetSpeedRequest(speed: value));
+    setState(() => _playbackRate = value);
+  }
+
+  Future<void> _getPosition() async {
+    final position = await _audioPlayer.getPosition();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Текущая позиция: $position сек")),
+    );
   }
 
   @override
@@ -90,11 +107,30 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: _urlController,
+                decoration: const InputDecoration(labelText: "Введите URL аудио"),
+                onChanged: (text) {
+                  setState(() {
+                    _audioUrl = text;
+                  });
+                },
+              ),
+            ),
+            ElevatedButton(
+              onPressed: setSource,
+              child: const Text("Установить источник"),
+            ),
+            const SizedBox(height: 20),
+            
             IconButton(
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               iconSize: 48,
               onPressed: _isPlaying ? _pause : _play,
             ),
+            
             Slider(
               value: _volume,
               min: 0,
@@ -102,6 +138,19 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
               onChanged: _setVolume,
             ),
             Text("Громкость: ${(_volume * 100).round()}%"),
+            
+            Slider(
+              value: _playbackRate,
+              min: 0.5,
+              max: 2.0,
+              onChanged: _setSpeed,
+            ),
+            Text("Скорость: ${_playbackRate.toStringAsFixed(1)}x"),
+            
+            ElevatedButton(
+              onPressed: _getPosition,
+              child: const Text("Получить позицию"),
+            ),
           ],
         ),
       ),
