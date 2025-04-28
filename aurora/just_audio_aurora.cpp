@@ -20,7 +20,7 @@ public:
         HandleMethodCall(call, std::move(result));
       }
     );
-    
+
     is_playing_ = false;
     is_initialized_ = false;
     volume_ = 1.0;
@@ -32,15 +32,21 @@ public:
     Dispose();
   }
 
+  std::vector<std::string> playlist;
+  int currentTrackInd = -1;
+
+  // обработка методов из Dart-части
   void HandleMethodCall(
     const MethodCall& call,
     std::unique_ptr<MethodResult> result
   ) {
     try {
+      // запуск воспроизведения аудиофайла
       if (call.method_name() == "play") {
         Play();
         result->Success(EncodableValue(true));
       }
+      // остановка воспроизведения аудиофайла
       else if (call.method_name() == "pause") {
         Pause();
         result->Success(EncodableValue(true));
@@ -53,6 +59,7 @@ public:
         }
         result->Success(EncodableValue(true));
       }
+      // изменение громкости воспроизведения
       else if (call.method_name() == "setVolume") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
         if (args) {
@@ -63,6 +70,7 @@ public:
         }
         result->Success(EncodableValue(true));
       }
+      // установка url аудиофайла
       else if (call.method_name() == "setUrl") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
         if (args) {
@@ -74,6 +82,23 @@ public:
         }
         result->Success(EncodableValue(true));
       }
+      else if (call.method_name() == "setPlaylist"){
+        const auto* args = std::get_if<EncodableMap>(call.arguments());
+        if (args) {
+          auto it = args->find(EncodableValue("urls"));
+          if (it != args->end() && std::holds_alternative<EncodableList>(it->second))
+          {
+            playlist.clear();
+            for (const auto& url : std::get<EncodableList>(it->second)){
+              playlist.push_back(std::get<std::string>(url));
+            }
+            currentTrackInd = 0;
+            SetSourceUrl(playlist[currentTrackInd]);
+          }
+        }
+        result->Success(EncodableValue(true));
+      }
+      // изменение скорости воспроизведения
       else if (call.method_name() == "setPlaybackRate") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
         if (args) {
@@ -84,12 +109,15 @@ public:
         }
         result->Success(EncodableValue(true));
       }
+      // геттер для получения текущей скорости воспроизведения
       else if (call.method_name() == "getPlaybackRate") {
         result->Success(EncodableValue(playback_rate_));
       }
+      // геттер для получения статуса повтора воспроизведения
       else if (call.method_name() == "isLooping") {
         result->Success(EncodableValue(is_looping_ ? "all" : "none"));
       }
+      //  
       else if (call.method_name() == "setLooping") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
         if (args) {
@@ -238,7 +266,6 @@ private:
                 std::cerr << "Failed to set pipeline to READY state" << std::endl;
             }
         }
-        
         is_initialized_ = true;
     }
   }

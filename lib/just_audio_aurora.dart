@@ -19,6 +19,10 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     }
   }
 
+  Future<void> notifyTrackEnded() async {
+    await _channel.invokeMethod('onTrackEnded');
+  }
+
   @override
   Future<LoadResponse> load(LoadRequest request) async {
     await _channel.invokeMethod('setUrl');
