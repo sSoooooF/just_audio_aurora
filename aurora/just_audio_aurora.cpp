@@ -8,7 +8,8 @@ class JustAudioAurora::Impl {
 public:
   Impl(PluginRegistrar* registrar) : registrar_(registrar) {
     gst_init(NULL, NULL);
-    
+    CreatePipeline();
+;
     channel_ = std::make_unique<MethodChannel>(
       registrar->messenger(),
       "just_audio_aurora",
@@ -33,7 +34,7 @@ public:
   }
 
   std::vector<std::string> playlist;
-  int currentTrackInd = -1;
+  size_t currentTrackInd = 0;
 
   // обработка методов из Dart-части
   void HandleMethodCall(
@@ -98,6 +99,10 @@ public:
         }
         result->Success(EncodableValue(true));
       }
+      else if (call.method_name() == "next") {
+        NextTrack();
+        result->Success(EncodableValue(true));
+      }
       // изменение скорости воспроизведения
       else if (call.method_name() == "setPlaybackRate") {
         const auto *args = std::get_if<EncodableMap>(call.arguments());
@@ -159,6 +164,11 @@ private:
       gst_.audiobin = gst_bin_new(nullptr);
       gst_.audiosink = gst_element_factory_make("autoaudiosink", "autoaudiosink");
 
+      if (!gst_.panorama || !gst_.audiosink) {
+        std::cerr << "Failed to create panorama or audiosink elements" << std::endl;
+        return false;
+      }
+
       gst_bin_add_many(GST_BIN(gst_.audiobin), gst_.panorama, gst_.audiosink, nullptr);
       gst_element_link(gst_.panorama, gst_.audiosink);
 
@@ -185,6 +195,16 @@ private:
     }
   }
 
+  void NextTrack() {
+    if (!playlist.empty() && currentTrackInd + 1 < playlist.size()) {
+      currentTrackInd++;
+      SetSourceUrl(playlist[currentTrackInd]);
+      Play();
+    } else {
+      Stop();
+    }
+  }
+  
   void Play() {
     if (!is_initialized_) return;
     
@@ -270,6 +290,8 @@ private:
     }
   }
 
+  
+
   int64_t GetPosition() {
     if (!is_initialized_) return -1;
 
@@ -297,6 +319,17 @@ private:
     return playback_rate_;
   }
 
+  int64_t GetRawPosition() {
+    if (!is_initialized_) return -1;
+
+    gint64 position = 0;
+    if (!gst_element_query_position(gst_.playbin, GST_FORMAT_TIME, &position)) {
+      return -1;
+    }
+
+    return position / GST_MSECOND;
+  }
+
   void SetPlaybackRate(double playback_rate) {
     if (playback_rate <= 0) {
       std::cerr << "Invalid playback rate: " << playback_rate << std::endl;
@@ -305,7 +338,7 @@ private:
 
     if (!is_initialized_) return;
 
-    int64_t position = GetCurrentPosition();
+    int64_t position = GetRawPosition();
     if (!gst_element_seek(gst_.playbin, playback_rate, GST_FORMAT_TIME,
                          GST_SEEK_FLAG_FLUSH,
                          GST_SEEK_TYPE_SET, position * GST_MSECOND,
@@ -412,6 +445,17 @@ private:
         break;
       case GST_MESSAGE_EOS:
         self->is_completed_ = true;
+        if (self->is_looping_) {
+          self->Play();
+        }
+        else if(!self->playlist.empty() && self->currentTrackInd + 1 < self->playlist.size()){
+          self->currentTrackInd++;
+          self->SetSourceUrl(self->playlist[self->currentTrackInd]);
+          self->Play();
+        }
+        else {
+          self->Stop();
+        }
         break;
       case GST_MESSAGE_WARNING: {
         gchar* debug;

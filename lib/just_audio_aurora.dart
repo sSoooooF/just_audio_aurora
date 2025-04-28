@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
 
@@ -23,10 +25,29 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     await _channel.invokeMethod('onTrackEnded');
   }
 
+
+  Future<void> loadFromUrl(String url) async {
+    await _channel.invokeMethod('setUrl', {'url': url});
+  }
+
+  Future<void> loadFromUri(String uri) async {
+    await _channel.invokeMethod('setUrl', {'url': uri});
+  }
+
+ 
   @override
   Future<LoadResponse> load(LoadRequest request) async {
-    await _channel.invokeMethod('setUrl');
-    return LoadResponse(duration: Duration(seconds: 0));
+    final audioSourceMessage = request.audioSourceMessage;
+    final sourceMap = audioSourceMessage.toMap();
+    final uri = sourceMap['uri'];
+
+    if (uri.startsWith('file://')) {
+      await loadFromUri(uri);
+    } else {
+      await loadFromUrl(uri);
+    }
+    
+    return LoadResponse(duration: Duration.zero);
   }
 
   @override
@@ -63,8 +84,8 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     return volume;
   }
 
-  Future<double> getPosition() async {
-    final double position = await _channel.invokeMethod('getPosition');
+  Future<int> getPosition() async {
+    final int position = await _channel.invokeMethod('getPosition');
     return position;
   }
 
@@ -84,7 +105,7 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
 
   @override
   Future<SetLoopModeResponse> setLoopMode(SetLoopModeRequest request) async {
-    await _channel.invokeMethod('setLooping', {'looping': request.loopMode});
+    await _channel.invokeMethod('setLooping', {'looping': request.loopMode == LoopModeMessage.one});
     return SetLoopModeResponse();
   }
 
@@ -94,12 +115,7 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     return DisposeResponse();
   }
 
-  // Stream<PlaybackEventMessage> get playbackEventMessageStream {
-    // return _eventChannel.receiveBroadcastStream().map((event) {
-      // return PlaybackEventMessage.fromMap(event);
-    // });
-  // }
-
-  // static const EventChannel _eventChannel =
-      // EventChannel('just_audio_aurora_events');
+  void nextTrack() {
+    _channel.invokeMethod('nextTrack');
+  }
 }

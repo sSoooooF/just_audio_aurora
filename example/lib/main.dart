@@ -1,11 +1,18 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio_aurora/just_audio_aurora.dart';
 import 'package:just_audio_aurora/just_audio_aurora_platform.dart';
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
+import 'package:file_selector_aurora/file_selector_aurora.dart';
+import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
+
+final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
-  registerJustAudioAurora();
+  // Set FileSelectorAuroraKeyContainer.navigatorKey
+  FileSelectorAuroraKeyContainer.navigatorKey = navigatorKey;
   runApp(const MyApp());
 }
 
@@ -15,6 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Just Audio Aurora Example',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const AudioPlayerScreen(),
@@ -36,6 +44,8 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   double _playbackRate = 1.0;
   String _audioUrl = "";
   TextEditingController _urlController = TextEditingController();
+  List<String> _playlist = [];
+  int _currentTrackIndex = -1;
 
   @override
   void initState() {
@@ -69,7 +79,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     try {
       await _audioPlayer.play(PlayRequest());
       setState(() => _isPlaying = true);
-    } catch (e) {
+    } catch (e)      {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Ошибка: $e")),
       );
@@ -80,7 +90,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     await _audioPlayer.pause(PauseRequest());
     setState(() => _isPlaying = false);
   }
-
 
   Future<void> _setVolume(double value) async {
     await _audioPlayer.setVolume(SetVolumeRequest(volume: value));
@@ -99,6 +108,73 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     );
   }
 
+  Future<void> _addTrackFromUrl() async {
+    if (_audioUrl.isNotEmpty) {
+      setState(() {
+        _playlist.add(_audioUrl);
+        if (_currentTrackIndex == -1) {
+          _currentTrackIndex = 0; // Если это первый трек
+        }
+      });
+    }
+  }
+  
+  Future<void> _addTrackFromFile() async {
+    const XTypeGroup typeGroup = XTypeGroup(
+      extensions: <String>['mp3', 'wav', 'm4a'],
+    );
+  
+    final XFile? file = await openFile(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
+    if (file != null) {
+      final String fileUrl = 'file://${file.path}';
+      setState(() {
+        _playlist.add(fileUrl);
+        if (_currentTrackIndex == -1) {
+          _currentTrackIndex = 0; // Если это первый трек
+        }
+      });
+    }
+  }
+
+
+  Future<void> _playTrackAtIndex(int index) async {
+    if (index >= 0 && index < _playlist.length) {
+      try {
+        _currentTrackIndex = index;
+        await _audioPlayer.setUrl(_playlist[_currentTrackIndex]);
+        await _audioPlayer.play(PlayRequest());
+        setState(() {
+          _isPlaying = true;
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Ошибка воспроизведения: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _nextTrack() async {
+    if (_currentTrackIndex + 1 < _playlist.length) {
+      await _playTrackAtIndex(_currentTrackIndex + 1);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Конец плейлиста!")),
+      );
+    }
+  }
+
+  Future<void> _previousTrack() async {
+    if (_currentTrackIndex - 1 >= 0) {
+      await _playTrackAtIndex(_currentTrackIndex - 1);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Это первый трек!")),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,30 +183,25 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: _urlController,
-                decoration: const InputDecoration(labelText: "Введите URL аудио"),
-                onChanged: (text) {
-                  setState(() {
-                    _audioUrl = text;
-                  });
-                },
-              ),
-            ),
-            ElevatedButton(
-              onPressed: setSource,
-              child: const Text("Установить источник"),
-            ),
             const SizedBox(height: 20),
-            
-            IconButton(
-              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-              iconSize: 48,
-              onPressed: _isPlaying ? _pause : _play,
+            Row(mainAxisAlignment: MainAxisAlignment.center,children: [
+              IconButton(
+                icon: const Icon(Icons.skip_previous),
+                iconSize: 48,
+                onPressed: _previousTrack,
+              ),
+              IconButton(
+                icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                iconSize: 48,
+                onPressed: _isPlaying ? _pause : _play,
+              ),
+              IconButton(
+                icon: const Icon(Icons.skip_next),
+                iconSize: 48,
+                onPressed: _nextTrack,
+              ),
+            ],
             ),
-            
             Slider(
               value: _volume,
               min: 0,
@@ -150,6 +221,37 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
             ElevatedButton(
               onPressed: _getPosition,
               child: const Text("Получить позицию"),
+            ),
+            
+            const SizedBox(height: 20),
+            Text("Плейлист:"),
+            for (var track in _playlist) Text(track),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _addTrackFromUrl,
+                  child: const Text("Добавить по URL"),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _addTrackFromFile,
+                  child: const Text("Добавить файл"),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: _urlController,
+                decoration: const InputDecoration(labelText: "Введите URL аудио"),
+                onChanged: (text) {
+                  setState(() {
+                    _audioUrl = text;
+                  });
+                },
+              ),
             ),
           ],
         ),
