@@ -33,7 +33,6 @@ public:
     Dispose();
   }
 
-  std::vector<std::string> playlist;
   size_t currentTrackInd = 0;
 
   // обработка методов из Dart-части
@@ -81,26 +80,6 @@ public:
             SetSourceUrl(url);
           }
         }
-        result->Success(EncodableValue(true));
-      }
-      else if (call.method_name() == "setPlaylist"){
-        const auto* args = std::get_if<EncodableMap>(call.arguments());
-        if (args) {
-          auto it = args->find(EncodableValue("urls"));
-          if (it != args->end() && std::holds_alternative<EncodableList>(it->second))
-          {
-            playlist.clear();
-            for (const auto& url : std::get<EncodableList>(it->second)){
-              playlist.push_back(std::get<std::string>(url));
-            }
-            currentTrackInd = 0;
-            SetSourceUrl(playlist[currentTrackInd]);
-          }
-        }
-        result->Success(EncodableValue(true));
-      }
-      else if (call.method_name() == "next") {
-        NextTrack();
         result->Success(EncodableValue(true));
       }
       // изменение скорости воспроизведения
@@ -195,16 +174,6 @@ private:
     }
   }
 
-  void NextTrack() {
-    if (!playlist.empty() && currentTrackInd + 1 < playlist.size()) {
-      currentTrackInd++;
-      SetSourceUrl(playlist[currentTrackInd]);
-      Play();
-    } else {
-      Stop();
-    }
-  }
-  
   void Play() {
     if (!is_initialized_) return;
     
@@ -446,11 +415,6 @@ private:
       case GST_MESSAGE_EOS:
         self->is_completed_ = true;
         if (self->is_looping_) {
-          self->Play();
-        }
-        else if(!self->playlist.empty() && self->currentTrackInd + 1 < self->playlist.size()){
-          self->currentTrackInd++;
-          self->SetSourceUrl(self->playlist[self->currentTrackInd]);
           self->Play();
         }
         else {

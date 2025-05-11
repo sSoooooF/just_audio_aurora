@@ -1,18 +1,34 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
 
-class AuroraAudioPlayer extends AudioPlayerPlatform {
+class AudioPlayerAurora extends AudioPlayerPlatform{
   @override
   final String id;
   final MethodChannel _channel;
 
-  AuroraAudioPlayer(this.id)
+  AudioPlayerAurora(this.id)
   : _channel = MethodChannel("just_audio_aurora"), super('');
+
+  Future<String> _getAssetFilePath(String assetPath) async {
+    final ByteData data = await rootBundle.load(assetPath);
+    final buffer = data.buffer.asUint8List();
+
+    final tempDir = await Directory.systemTemp.createTemp();
+    final tempFile = File('${tempDir.path}/${assetPath.split('/').last}');
+
+    await tempFile.writeAsBytes(buffer);
+
+    return tempFile.path;
+  }
 
   Future<void> setUrl(String url) async {
     try {
+      if (url.startsWith('assets:///')) {
+          url = await _getAssetFilePath(url.replaceFirst('assets:///', 'assets/'));
+      }
       await _channel.invokeMethod('setUrl', {
         'url':url
       });
@@ -25,7 +41,6 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     await _channel.invokeMethod('onTrackEnded');
   }
 
-
   Future<void> loadFromUrl(String url) async {
     await _channel.invokeMethod('setUrl', {'url': url});
   }
@@ -34,7 +49,6 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     await _channel.invokeMethod('setUrl', {'url': uri});
   }
 
- 
   @override
   Future<LoadResponse> load(LoadRequest request) async {
     final audioSourceMessage = request.audioSourceMessage;
@@ -43,10 +57,10 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
 
     if (uri.startsWith('file://')) {
       await loadFromUri(uri);
-    } else {
+    } 
+    else {
       await loadFromUrl(uri);
     }
-    
     return LoadResponse(duration: Duration.zero);
   }
 
@@ -61,6 +75,7 @@ class AuroraAudioPlayer extends AudioPlayerPlatform {
     await _channel.invokeMethod('pause');
     return PauseResponse();
   }
+
 
   @override
   Future<SeekResponse> seek(SeekRequest request) async {

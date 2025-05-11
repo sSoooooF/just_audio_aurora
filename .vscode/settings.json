@@ -59,7 +59,8 @@
         "qmediaplayer": "cpp",
         "bitset": "cpp",
         "mutex": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "cinttypes": "cpp"
     },
     "cmake.ignoreCMakeListsMissing": true
 }

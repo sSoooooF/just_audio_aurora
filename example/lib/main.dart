@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_aurora/just_audio_aurora.dart';
 import 'package:just_audio_aurora/just_audio_aurora_platform.dart';
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
@@ -11,7 +14,6 @@ import 'package:file_selector_platform_interface/file_selector_platform_interfac
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
-  // Set FileSelectorAuroraKeyContainer.navigatorKey
   FileSelectorAuroraKeyContainer.navigatorKey = navigatorKey;
   runApp(const MyApp());
 }
@@ -38,39 +40,49 @@ class AudioPlayerScreen extends StatefulWidget {
 }
 
 class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
-  late final AuroraAudioPlayer _audioPlayer;
+  late final AudioPlayerAurora _audioPlayer;
   bool _isPlaying = false;
   double _volume = 1.0;
   double _playbackRate = 1.0;
   String _audioUrl = "";
   TextEditingController _urlController = TextEditingController();
-  List<String> _playlist = [];
-  int _currentTrackIndex = -1;
+  List<String> _playlist = [
+    'assets:///Bones.mp3',
+  ];
+  int _currentTrackIndex = 0;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+  late Timer _positionTimer;
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer = AuroraAudioPlayer("just_audio_aurora");
-    setSource();
+    _audioPlayer = AudioPlayerAurora("just_audio_aurora");
+    _initPlayer();
+    _startPositionTimer();
+  }
+
+  Future<void> _initPlayer() async {
+    await _playTrackAtIndex(_currentTrackIndex);
+  }
+
+  void _startPositionTimer() {
+    _positionTimer = Timer.periodic(Duration(milliseconds: 500), (timer) async {
+      final positionMs = await _audioPlayer.getPosition();
+      if (positionMs != null) {
+        setState(() {
+          _position = Duration(milliseconds: positionMs);
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _positionTimer.cancel();
     _audioPlayer.dispose(DisposeRequest());
+    _urlController.dispose();
     super.dispose();
-  }
-
-  Future<void> setSource() async {
-    if (_audioUrl.isNotEmpty) {
-      try {
-        await _audioPlayer.setUrl(_audioUrl);
-        setState(() {});
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Ошибка: $e")),
-        );
-      }
-    }
   }
 
   Future<void> _play() async {
@@ -79,10 +91,8 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     try {
       await _audioPlayer.play(PlayRequest());
       setState(() => _isPlaying = true);
-    } catch (e)      {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ошибка: $e")),
-      );
+    } catch (e) {
+      _showError("Ошибка воспроизведения: $e");
     }
   }
 
@@ -91,76 +101,35 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     setState(() => _isPlaying = false);
   }
 
-  Future<void> _setVolume(double value) async {
-    await _audioPlayer.setVolume(SetVolumeRequest(volume: value));
-    setState(() => _volume = value);
-  }
-
-  Future<void> _setSpeed(double value) async {
-    await _audioPlayer.setSpeed(SetSpeedRequest(speed: value));
-    setState(() => _playbackRate = value);
-  }
-
-  Future<void> _getPosition() async {
-    final position = await _audioPlayer.getPosition();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Текущая позиция: $position сек")),
-    );
-  }
-
-  Future<void> _addTrackFromUrl() async {
-    if (_audioUrl.isNotEmpty) {
-      setState(() {
-        _playlist.add(_audioUrl);
-        if (_currentTrackIndex == -1) {
-          _currentTrackIndex = 0; // Если это первый трек
-        }
-      });
-    }
-  }
   
-  Future<void> _addTrackFromFile() async {
-    const XTypeGroup typeGroup = XTypeGroup(
-      extensions: <String>['mp3', 'wav', 'm4a'],
-    );
-  
-    final XFile? file = await openFile(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
-    if (file != null) {
-      final String fileUrl = 'file://${file.path}';
-      setState(() {
-        _playlist.add(fileUrl);
-        if (_currentTrackIndex == -1) {
-          _currentTrackIndex = 0; // Если это первый трек
-        }
-      });
-    }
-  }
-
 
   Future<void> _playTrackAtIndex(int index) async {
     if (index >= 0 && index < _playlist.length) {
       try {
-        _currentTrackIndex = index;
-        await _audioPlayer.setUrl(_playlist[_currentTrackIndex]);
-        await _audioPlayer.play(PlayRequest());
+        String trackUrl = _playlist[index];
+
+        
+
+        await _audioPlayer.setUrl(trackUrl);
         setState(() {
-          _isPlaying = true;
+          _currentTrackIndex = index;
+          _isPlaying = false;
+          _position = Duration.zero;
         });
+
+        await _play();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Ошибка воспроизведения: $e")),
-        );
+        _showError("Ошибка загрузки трека: $e");
       }
     }
   }
+
 
   Future<void> _nextTrack() async {
     if (_currentTrackIndex + 1 < _playlist.length) {
       await _playTrackAtIndex(_currentTrackIndex + 1);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Конец плейлиста!")),
-      );
+      _showMessage("Конец плейлиста!");
     }
   }
 
@@ -168,94 +137,212 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     if (_currentTrackIndex - 1 >= 0) {
       await _playTrackAtIndex(_currentTrackIndex - 1);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Это первый трек!")),
-      );
+      _showMessage("Это первый трек!");
     }
   }
 
+  Future<void> _addTrackFromUrl() async {
+    if (_audioUrl.isNotEmpty && !_playlist.contains(_audioUrl)) {
+      setState(() {
+        _playlist.add(_audioUrl);
+      });
+      _showMessage("Трек добавлен в плейлист");
+    }
+  }
+
+  Future<void> _addTrackFromFile() async {
+    const XTypeGroup typeGroup = XTypeGroup(
+      extensions: <String>['mp3', 'wav', 'm4a', 'ogg'],
+    );
+
+    final XFile? file = await openFile(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
+    if (file != null) {
+      final String fileUrl = 'file://${file.path}';
+      if (!_playlist.contains(fileUrl)) {
+        setState(() {
+          _playlist.add(fileUrl);
+        });
+        _showMessage("Файл добавлен в плейлист");
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Just Audio Aurora Example')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-            Row(mainAxisAlignment: MainAxisAlignment.center,children: [
-              IconButton(
-                icon: const Icon(Icons.skip_previous),
-                iconSize: 48,
-                onPressed: _previousTrack,
+      appBar: AppBar(title: const Text('Aurora Audio Player')),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // Отображение текущего трека
+              Text(
+                "Сейчас играет:",
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              IconButton(
-                icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                iconSize: 48,
-                onPressed: _isPlaying ? _pause : _play,
+              const SizedBox(height: 8),
+              Text(
+                _playlist[_currentTrackIndex].split('/').last,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
               ),
-              IconButton(
-                icon: const Icon(Icons.skip_next),
-                iconSize: 48,
-                onPressed: _nextTrack,
+              const SizedBox(height: 20),
+              
+              // Прогресс-бар
+              LinearProgressIndicator(
+                value: _duration.inSeconds > 0 
+                  ? _position.inSeconds / _duration.inSeconds 
+                  : 0,
               ),
-            ],
-            ),
-            Slider(
-              value: _volume,
-              min: 0,
-              max: 1,
-              onChanged: _setVolume,
-            ),
-            Text("Громкость: ${(_volume * 100).round()}%"),
-            
-            Slider(
-              value: _playbackRate,
-              min: 0.5,
-              max: 2.0,
-              onChanged: _setSpeed,
-            ),
-            Text("Скорость: ${_playbackRate.toStringAsFixed(1)}x"),
-            
-            ElevatedButton(
-              onPressed: _getPosition,
-              child: const Text("Получить позицию"),
-            ),
-            
-            const SizedBox(height: 20),
-            Text("Плейлист:"),
-            for (var track in _playlist) Text(track),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: _addTrackFromUrl,
-                  child: const Text("Добавить по URL"),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: _addTrackFromFile,
-                  child: const Text("Добавить файл"),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(_formatDuration(_position)),
+                  Text(_formatDuration(_duration)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Кнопки управления
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous),
+                    iconSize: 36,
+                    onPressed: _previousTrack,
+                  ),
+                  IconButton(
+                    icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                    iconSize: 48,
+                    onPressed: _isPlaying ? _pause : _play,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next),
+                    iconSize: 36,
+                    onPressed: _nextTrack,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Громкость
+              Row(
+                children: [
+                  const Icon(Icons.volume_down),
+                  Expanded(
+                    child: Slider(
+                      value: _volume,
+                      min: 0,
+                      max: 1,
+                      onChanged: (value) {
+                        setState(() => _volume = value);
+                        _audioPlayer.setVolume(SetVolumeRequest(volume: value));
+                      },
+                    ),
+                  ),
+                  const Icon(Icons.volume_up),
+                ],
+              ),
+              Text("Громкость: ${(_volume * 100).round()}%"),
+              const SizedBox(height: 20),
+              
+              // Скорость
+              Row(
+                children: [
+                  const Icon(Icons.speed),
+                  Expanded(
+                    child: Slider(
+                      value: _playbackRate,
+                      min: 0.5,
+                      max: 2.0,
+                      divisions: 3,
+                      label: "${_playbackRate.toStringAsFixed(1)}x",
+                      onChanged: (value) {
+                        setState(() => _playbackRate = value);
+                        _audioPlayer.setSpeed(SetSpeedRequest(speed: value));
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              
+              // Добавление треков
+              TextField(
                 controller: _urlController,
-                decoration: const InputDecoration(labelText: "Введите URL аудио"),
-                onChanged: (text) {
-                  setState(() {
-                    _audioUrl = text;
-                  });
-                },
+                decoration: const InputDecoration(
+                  labelText: "URL аудио",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.link),
+                ),
+                onChanged: (text) => _audioUrl = text,
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.add_link),
+                      label: const Text("Добавить URL"),
+                      onPressed: _addTrackFromUrl,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text("Добавить файл"),
+                      onPressed: _addTrackFromFile,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Плейлист
+              Text(
+                "Плейлист (${_playlist.length} треков)",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 10),
+              ..._playlist.asMap().entries.map((entry) {
+                final index = entry.key;
+                final track = entry.value;
+                return ListTile(
+                  leading: Text("${index + 1}"),
+                  title: Text(track.split('/').last),
+                  trailing: _currentTrackIndex == index 
+                    ? const Icon(Icons.music_note, color: Colors.blue)
+                    : null,
+                  onTap: () => _playTrackAtIndex(index),
+                );
+              }).toList(),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$minutes:$seconds";
   }
 }
